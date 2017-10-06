@@ -69,9 +69,35 @@ int main(int argc,char **argv)
 	}
 	else
 	{
-		chdir(*++argv);
+		chdir(argv[1]);
 		head->file_path  = *argv;
-		do_ls(*argv);
+		do_ls(argv[1]);
+		int opt;
+		while((opt = getopt(argc,argv,"lRaid")) != -1)
+		{
+			switch(opt) 
+			{
+				case 'l':
+					l=1;
+					break;
+				case 'R':
+					R=1;
+					break;
+				case 'a':
+					a=1;
+					break;
+				case 'i':
+					i=1;
+					break;
+				case 'd':
+					d = 1;
+				case '?':
+					printf("unknown option: %c\n",optopt);
+					break;
+				default:
+					break;
+			}
+		}
 		chdir("");
 	}
 
