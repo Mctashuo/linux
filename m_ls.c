@@ -37,13 +37,13 @@ typedef struct node
 
 }Node,*SList;
 
-SList SL_Create();
+SList SL_Create();		//创建空链表
 
-int l = 0,R=0,a=0,i=0,d=0;
+int l = 0,R=0,a=0,i=0,d=0;	//标志位
 
 SList SL_Insert(SList,char * file_path);
 
-SList do_ls(SList,char * dirname);
+SList do_ls(SList,char * dirname);	//获取目录信息
 
 
 void mode_to_letters(int mode, char * str);
@@ -52,13 +52,11 @@ char *uid_to_name(uid_t uid);
 
 char *gid_to_name(gid_t gid);
 
-void set_filepath(SList ,char * filepath);
 
-void printf_dir(SList);
+void printf_dir(SList);		//打印目录信息
 
-void isR(char *);
+void isR(char *);		//-R专用处理函数
 
-void del_list(SList);
 int main(int argc,char **argv)
 {
 
@@ -92,10 +90,10 @@ int main(int argc,char **argv)
 		}
 	}
 
-	if (argc == 1)
+	if (argc == 1)		//当只有一个参数时判断是目录还是控制符
 	{
 
-		if(l==0 && R ==0 && a==0 && i==0 && d==0){
+		if(l==0 && R ==0 && a==0 && i==0 && d==0){	//参数未设置
 			char *temp = malloc(strlen(argv[optind]));
 /*		for(;optind<argc;optind++)
 
@@ -118,7 +116,7 @@ int main(int argc,char **argv)
 		}
 	}
 
-	else if(argc >2)
+	else if(argc >2)	//目录和控制符同时出现
 	{
 		char *temp = malloc(strlen(argv[optind]));
 		strncpy(temp,argv[optind],strlen(argv[optind]));	
@@ -133,7 +131,7 @@ int main(int argc,char **argv)
 		cur = do_ls(cur,".");
 	}
 
-	if(R==1)
+	if(R==1)	//当有-R出现时换一种处理机制
 	{
 		isR(head->file_path);
 	}
@@ -215,8 +213,7 @@ d_name:文件名
 
 		{ 
 
-			//    dostat( direntp->d_name );/*逐个显示目录里文件信息*/
-		//	set_filepath(cur,direntp->d_name);
+			//将识别的目录添加入链表
 			cur = SL_Insert(cur,direntp->d_name);
 		}
 
@@ -229,7 +226,7 @@ d_name:文件名
 
 
 
-void mode_to_letters(int mode, char * str)
+void mode_to_letters(int mode, char * str)	//将数字转换为-r-w-r形式
 
 {
 
@@ -357,13 +354,6 @@ char *gid_to_name( gid_t gid )
 
 }
 
-void set_filepath(SList lcur ,char *filepath)
-{
-	//	struct file_info *f;
-	//	f->next = NULL;
-	lcur = SL_Insert(lcur,filepath);
-
-}
 
 
 SList SL_Create()	//创建链表
@@ -397,7 +387,7 @@ SList SL_Insert(SList list,char * file_path)
 
 	
 }
-void printf_dir(SList list)
+void printf_dir(SList list)		//打印链表中存放的目录信息
 {
 	list=list->next;
 
@@ -445,12 +435,12 @@ void printf_dir(SList list)
 }
 
 
-void isR(char *dir)
+void isR(char *dir)		//-R处理函数
 {
 	DIR *dp;
 	struct dirent *entry;
 	struct stat statbuf;
-	SList head,cur;
+	SList head,cur;  //存放当前目录下文件信息
 	
 	
 	cur = head = SL_Create();
@@ -461,29 +451,29 @@ void isR(char *dir)
 	}
 
 
-	chdir(dir);
+	chdir(dir);		//更换工作目录
 	SList shead,scur;
-	scur = shead = SL_Create();
+	scur = shead = SL_Create();	//把所有子目录存放起来
 	shead->file_path = dir;
 	while((entry = readdir(dp)) !=NULL) 
 	{
 		lstat(entry->d_name,&statbuf);
 	//	set_filepath(cur,entry->d_name);
-		cur = SL_Insert(cur,entry->d_name);
+		cur = SL_Insert(cur,entry->d_name);	//将文件信息放入链表中
 		
 		if(S_ISDIR(statbuf.st_mode)) 
 		{
 			if(strcmp(".",entry->d_name) == 0 || strcmp("..",entry->d_name) == 0)
 				continue;
 
-			scur = SL_Insert(scur,entry->d_name);
+			scur = SL_Insert(scur,entry->d_name);	//子目录信息放入另一个链表中
 			
 		}
 		
 	}
 	printf("\n%s:\n",getcwd(NULL,0));
 	printf_dir(head);
-	
+	//递归调用打印子目录	
 	SList list = shead;
 
 	while(list->next != NULL)
@@ -496,18 +486,3 @@ void isR(char *dir)
 	closedir(dp);
 }
 
-
-void del_list(SList head)
-{
-
-	SList p,q;
-	p=head;
-	while(p != NULL)
-	{
-		q = p->next;
-		free(p);
-		p = q;
-	}
-	p=NULL;
-	q=NULL;
-}
