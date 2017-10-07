@@ -37,14 +37,13 @@ typedef struct node
 
 }Node,*SList;
 
-SList head,cur;	//定义一个头指针和当前尾指针
 SList SL_Create();
 
 int l = 0,R=0,a=0,i=0,d=0;
 
 SList SL_Insert(SList,char * file_path);
 
-void do_ls(char * dirname);
+SList do_ls(SList,char * dirname);
 
 
 void mode_to_letters(int mode, char * str);
@@ -53,60 +52,100 @@ char *uid_to_name(uid_t uid);
 
 char *gid_to_name(gid_t gid);
 
-void set_filepath(char * filepath);
+void set_filepath(SList ,char * filepath);
 
-void printf_dir();
+void printf_dir(SList);
 
+void isR(char *);
+
+void del_list(SList);
 int main(int argc,char **argv)
 {
 
+	SList head,cur;	//定义一个头指针和当前尾指针
 	head = SL_Create();
 	cur = head;
-	if (argc <= 1)
+	int opt;
+	while((opt = getopt(argc,argv,"lRaid")) != -1)
 	{
-		head->file_path = ".";
-		do_ls(".");
-	}
-	else
-	{
-		chdir(argv[1]);
-		head->file_path  = *argv;
-		do_ls(argv[1]);
-		int opt;
-		while((opt = getopt(argc,argv,"lRaid")) != -1)
+		switch(opt) 
 		{
-			switch(opt) 
-			{
-				case 'l':
-					l=1;
-					break;
-				case 'R':
-					R=1;
-					break;
-				case 'a':
-					a=1;
-					break;
-				case 'i':
-					i=1;
-					break;
-				case 'd':
-					d = 1;
-				case '?':
-					printf("unknown option: %c\n",optopt);
-					break;
-				default:
-					break;
-			}
+			case 'l':
+				l=1;
+				break;
+			case 'R':
+				R=1;
+				break;
+			case 'a':
+				a=1;
+				break;
+			case 'i':
+				i=1;
+				break;
+			case 'd':
+				d = 1;
+			case '?':
+				printf("unknown option: %c\n",optopt);
+				break;
+			default:
+				break;
 		}
-		chdir("");
 	}
 
-	printf_dir();
+	if (argc == 1)
+	{
+
+		if(l==0 && R ==0 && a==0 && i==0 && d==0){
+			char *temp = malloc(strlen(argv[optind]));
+/*		for(;optind<argc;optind++)
+
+		{
+			printf("%d",(int)strlen(argv[optind]));
+			printf("%s\n",argv[optind]);
+		}
+*/
+	//	memcpy(temp,argv+optind,(argc-optind)*sizeof(char));
+			strncpy(temp,argv[optind],strlen(argv[optind]));	
+			chdir(temp);
+			head->file_path  = temp;
+			cur = do_ls(cur,temp);
+		}
+		else
+		{
+			head->file_path = ".";
+			cur = do_ls(cur,".");
+		
+		}
+	}
+
+	else if(argc >2)
+	{
+		char *temp = malloc(strlen(argv[optind]));
+		strncpy(temp,argv[optind],strlen(argv[optind]));	
+		chdir(temp);
+		head->file_path  = temp;
+		cur = do_ls(cur,temp);
+		
+	}
+	else 
+	{
+		head->file_path = ".";
+		cur = do_ls(cur,".");
+	}
+
+	if(R==1)
+	{
+		isR(head->file_path);
+	}
+	else{
+		printf_dir(head);
+	}
+	chdir("");
 	return 0;
 }
 
 
-void do_ls( char * dirname )
+SList do_ls(SList cur, char * dirname )
 
 {
 
@@ -177,11 +216,13 @@ d_name:文件名
 		{ 
 
 			//    dostat( direntp->d_name );/*逐个显示目录里文件信息*/
-			set_filepath(direntp->d_name);
+		//	set_filepath(cur,direntp->d_name);
+			cur = SL_Insert(cur,direntp->d_name);
 		}
 
 		closedir(dir_ptr);
 
+		return cur;
 	}
 
 }
@@ -316,11 +357,11 @@ char *gid_to_name( gid_t gid )
 
 }
 
-void set_filepath(char *filepath)
+void set_filepath(SList lcur ,char *filepath)
 {
 	//	struct file_info *f;
 	//	f->next = NULL;
-	cur = SL_Insert(cur,filepath);
+	lcur = SL_Insert(lcur,filepath);
 
 }
 
@@ -356,13 +397,117 @@ SList SL_Insert(SList list,char * file_path)
 
 	
 }
-void printf_dir()
+void printf_dir(SList list)
 {
-	SList l = head;	
+	list=list->next;
+
 	do
 	{
-		if(l->file_path[0] != 46)
-			printf("%s  ",l->file_path);
-		l=l->next;
-	}while(l->next!=NULL);   //46 为.的ascll码
+		if(a==0 && list->file_path[0] == 46)
+		{
+			list=list->next;
+			continue;
+		}
+		struct stat info,*info_p;
+		if(stat(list->file_path,&info) == -1)
+		{
+			perror(list->file_path);
+		}
+
+		else
+		{
+			info_p = &info;
+		}
+		if(i==1)
+		{
+			printf("%8d  ",(int) info_p->st_ino); 
+		}
+		if(l==1)
+		{
+			char modestr[11];
+			mode_to_letters(info_p->st_mode,modestr);
+			
+			printf("%s",modestr);
+			printf("%-8s ",uid_to_name(info_p->st_uid));
+			printf("%-8s ",gid_to_name(info_p->st_gid));
+			printf("%4d ",(int)info_p->st_nlink);
+			printf("%8ld ",(long)info_p->st_size);
+			printf("%.12s ",4 + ctime(&info_p->st_mtime));
+		}
+
+		printf("%s  ",list->file_path);
+		list=list->next;
+		if(l==1)
+		{
+			printf("\n");
+		}
+	}while(list->next!=NULL);   //46 为.的ascll码
+}
+
+
+void isR(char *dir)
+{
+	DIR *dp;
+	struct dirent *entry;
+	struct stat statbuf;
+	SList head,cur;
+	
+	
+	cur = head = SL_Create();
+
+	if((dp = opendir(dir)) == NULL)
+	{
+		return;
+	}
+
+
+	chdir(dir);
+	SList shead,scur;
+	scur = shead = SL_Create();
+	shead->file_path = dir;
+	while((entry = readdir(dp)) !=NULL) 
+	{
+		lstat(entry->d_name,&statbuf);
+	//	set_filepath(cur,entry->d_name);
+		cur = SL_Insert(cur,entry->d_name);
+		
+		if(S_ISDIR(statbuf.st_mode)) 
+		{
+			if(strcmp(".",entry->d_name) == 0 || strcmp("..",entry->d_name) == 0)
+				continue;
+
+			scur = SL_Insert(scur,entry->d_name);
+			
+		}
+		
+	}
+	printf("\n%s:\n",getcwd(NULL,0));
+	printf_dir(head);
+	
+	SList list = shead;
+
+	while(list->next != NULL)
+	{
+		list = list->next;
+		isR(list->file_path);
+	}
+	chdir("..");
+
+	closedir(dp);
+}
+
+
+void del_list(SList head)
+{
+
+	SList p,q;
+	p=head;
+	while(p != NULL)
+	{
+		q = p->next;
+		free(p);
+		p = q;
+	}
+	p=NULL;
+	q=NULL;
 }
