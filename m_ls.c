@@ -60,6 +60,7 @@ void isR(char *);		//-R专用处理函数
 int main(int argc,char **argv)
 {
 
+	//printf("fsdfs");
 	SList head,cur;	//定义一个头指针和当前尾指针
 	head = SL_Create();
 	cur = head;
@@ -82,6 +83,7 @@ int main(int argc,char **argv)
 				break;
 			case 'd':
 				d = 1;
+				break;
 			case '?':
 				printf("unknown option: %c\n",optopt);
 				break;
@@ -90,7 +92,7 @@ int main(int argc,char **argv)
 		}
 	}
 
-	if (argc == 1)		//当只有一个参数时判断是目录还是控制符
+	if (argc == 2)		//当只有一个参数时判断是目录还是控制符
 	{
 
 		if(l==0 && R ==0 && a==0 && i==0 && d==0){	//参数未设置
@@ -425,6 +427,16 @@ void printf_dir(SList list)		//打印链表中存放的目录信息
 			printf("%.12s ",4 + ctime(&info_p->st_mtime));
 		}
 
+		if(d ==1)
+		{
+			if(S_ISDIR(info.st_mode))
+			{
+				printf("%s  ",list->file_path);
+				
+			}
+			
+		}
+		if(d ==0)
 		printf("%s  ",list->file_path);
 		list=list->next;
 		if(l==1)
