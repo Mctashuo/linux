@@ -10,7 +10,10 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
+#include <string.h>
 int main()
 {
     int server_sockfd, client_sockfd;
@@ -43,9 +46,7 @@ int main()
     The program will exit and report an error if select returns a value of less than 1.  */
 
     while(1) {
-        char ch;
         int fd;
-        int nread;
 
         testfds = readfds;
 
@@ -80,6 +81,7 @@ int main()
     Otherwise, we 'serve' the client as in the previous examples.  */
 
                 else {
+                    int nread;
                     ioctl(fd, FIONREAD, &nread);
 
                     if(nread == 0) {
@@ -89,12 +91,29 @@ int main()
                     }
 
                     else {
-                        read(fd, &ch, 1);
-                        sleep(5);
-                        printf("serving client on fd %d\n", fd);
-                        ch++;
-                        write(fd, &ch, 1);
+                        char  param[3][128];
+                        char block[1024 * 1024];
+                        memset(block,0,sizeof(block));
+                        int in,out;
+                        read(fd,param,sizeof(param));
+                        printf("way: %s\tfile: %s\t proto: %s\t",param[0],param[1],param[2]);
+                        int count = 0;
+                        in = open(param[1],O_RDONLY);
+
+                        if(in == -1) {
+                            printf("no such file");
+                            break;
+                        }
+
+                        
+                        while((nread = read(in,block,sizeof(block)))>0) {
+                            write(fd,block,nread);
+                            printf("%d\t",nread);
+                        }
+                        
+
                     }
+
                 }
             }
         }
